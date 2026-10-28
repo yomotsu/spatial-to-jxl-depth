@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+    <title>Spatial HEIC → JPEG XL</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-label="変換ツールの説明">
+        <p class="eyebrow">IPHONE SPATIAL PHOTO CONVERTER</p>
+        <p class="intro">iPhone で撮影した深度付き HEIC を、深度チャンネル入りの JPEG XL に変換します。</p>
+      </section>
+
+      <section class="panel" aria-label="変換設定">
+        <label id="dropzone" class="dropzone" for="file-input" tabindex="0">
+          <input id="file-input" type="file" accept=".heic,.heif,image/heic,image/heif">
+          <span class="upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4.5 15.5v3A1.5 1.5 0 006 20h12a1.5 1.5 0 001.5-1.5v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="drop-title">HEIC ファイルをドロップ</span>
+          <span class="drop-subtitle">または <span>ファイルを選択</span></span>
+          <span class="file-limit">HEIC / HEIF ・ 最大 512 MiB</span>
+        </label>
+
+        <div id="file-card" class="file-card hidden">
+          <div class="file-icon" aria-hidden="true">HEIC</div>
+          <div class="file-details">
+            <span id="file-name" class="file-name"></span>
+            <span id="file-size" class="file-size"></span>
+          </div>
+          <button id="remove-file" class="icon-button" type="button" aria-label="ファイルを外す">×</button>
+        </div>
+
+        <div class="resize-settings">
+          <div class="resize-heading">
+            <span class="resize-title">出力サイズ</span>
+            <label class="aspect-lock" for="aspect-lock">
+              <input id="aspect-lock" type="checkbox" checked disabled>
+              アスペクト比を固定
+            </label>
+          </div>
+          <div class="dimension-row">
+            <label for="output-width">幅 (px)<input id="output-width" type="number" min="1" max="32768" step="1" inputmode="numeric" disabled></label>
+            <span class="dimension-separator" aria-hidden="true">×</span>
+            <label for="output-height">高さ (px)<input id="output-height" type="number" min="1" max="32768" step="1" inputmode="numeric" disabled></label>
+          </div>
+          <p id="source-size-note" class="resize-note">HEIC を選ぶと元画像のサイズが入ります。</p>
+        </div>
+
+        <div class="settings">
+          <div class="setting-head">
+            <div>
+              <label for="quality">Distance (Quality)</label>
+              <p>Distance は色画像の「見た目の差」を指定する画質設定です。数値が低いほど元画像に近く、高いほど見た目の差を許容します。<br>数値を上げると容量は小さくなる傾向がありますが、その分劣化します。<br>0 はロスレス、1 は視覚的にほぼロスレスの目安です。よく使われる非可逆圧縮の範囲は 0.5〜3.0、指定可能範囲は 0〜25 です。<br>チャンネルごとに異なる Distance を指定できますが、このアプリでは深度チャンネルにも色チャンネルと同じ Distance が適用されます。<br>なお、<a href="https://github.com/libjxl/libjxl/blob/main/doc/man/cjxl.txt" target="_blank" rel="noreferrer">libjxl の cjxl</a> では Quality（0〜100）も指定できますが、内部で Distance に変換されます。</p>
+            </div>
+          </div>
+          <div class="quality-slider-head"><output id="quality-value" for="quality">ロスレス</output></div>
+          <input id="quality" type="range" min="0" max="25" step="0.5" value="0">
+          <div class="range-labels"><span>0 · ロスレス</span><span>25 · 最大</span></div>
+          <div class="effort-row">
+            <label for="effort">Encode effort</label>
+            <select id="effort">
+              <option value="1">1 · 最速</option>
+              <option value="2">2</option>
+              <option value="3" selected>3 · 速い</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7 · 標準</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10 · 最も遅い</option>
+            </select>
+          </div>
+          <p class="effort-note">Effort は数値が高いほどエンコードに時間がかかりますが、ブロックノイズなどの圧縮アーティファクトが目立ちにくくなり、ほぼ同容量で画質が向上します。<br><a href="https://github.com/libjxl/libjxl/blob/main/doc/encode_effort.md" target="_blank" rel="noreferrer">参考</a></p>
+        </div>
+
+        <button id="preview-button" class="convert-button" type="button" disabled>
+          <span>プレビューを作成</span>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h11m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="progress-area" class="progress-area hidden" aria-live="polite">
+          <div class="progress-track"><span></span></div>
+          <p id="status">プレビューを作成しています…</p>
+        </div>
+        <div id="error" class="message error hidden" role="alert"></div>
+      </section>
+
+      <section id="comparison" class="comparison hidden" aria-label="変換前後の比較">
+        <div class="comparison-heading">
+          <div><p class="eyebrow">PREVIEW</p><h2>変換前後を比較</h2></div>
+          <div class="comparison-actions">
+            <span id="size-change" class="size-change"></span>
+            <button id="zoom-toggle" class="zoom-toggle" type="button">拡大</button>
+          </div>
+        </div>
+        <div class="wipe-preview">
+          <div id="wipe-stage" class="wipe-stage">
+            <img id="before-image" alt="変換前のHEIC画像">
+            <div class="wipe-after-layer"><img id="after-image" alt="変換後のJPEG XL画像"></div>
+            <span class="wipe-label wipe-label-before">HEIC <small id="before-size"></small></span>
+            <span class="wipe-label wipe-label-after">JPEG XL <small id="after-size"></small></span>
+            <div id="wipe-divider" class="wipe-divider" role="slider" tabindex="0" aria-label="変換前後の表示境界" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span>↔</span></div>
+          </div>
+        </div>
+        <div class="size-panel">
+          <div class="size-panel-title"><h3>ファイル容量</h3><span id="dimensions"></span></div>
+          <div class="size-row"><div><span>HEIC</span><strong id="before-size-detail"></strong></div><div class="size-bar"><span id="before-bar"></span></div></div>
+          <div class="size-row"><div><span>JPEG XL</span><strong id="after-size-detail"></strong></div><div class="size-bar jxl"><span id="after-bar"></span></div></div>
+        </div>
+        <button id="export-button" class="export-button" type="button" disabled>
+          <span>書き出し</span>
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 13v3.5A.5.5 0 004.5 17h11a.5.5 0 00.5-.5V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <p id="export-note" class="export-note">プレビュー確認後、「書き出し」を押すと JXL ファイルを保存できます。</p>
+        <div id="success" class="message success hidden" role="status"></div>
+      </section>
+
+      <div id="preview-modal" class="preview-modal hidden" role="dialog" aria-modal="true" aria-label="変換前後の拡大比較">
+        <div class="preview-modal-dialog">
+          <div class="preview-modal-toolbar">
+            <div class="preview-screen-heading">
+              <span id="zoom-title">変換前後の拡大比較</span>
+              <small>境界をドラッグして比較 · 画像をドラッグして移動 · ホイールで拡大・縮小</small>
+            </div>
+            <div class="zoom-controls">
+              <button id="zoom-out" type="button" aria-label="縮小">−</button>
+              <output id="zoom-level">全体表示</output>
+              <button id="zoom-in" type="button" aria-label="拡大">＋</button>
+              <button id="zoom-fit" type="button">全体表示</button>
+              <button id="zoom-close" class="zoom-back" type="button" aria-label="比較プレビューに戻る">比較に戻る</button>
+            </div>
+          </div>
+          <div id="zoom-viewport" class="zoom-viewport">
+            <div id="zoom-stage" class="wipe-stage">
+              <img id="zoom-before-image" alt="拡大されたHEIC画像">
+              <div class="wipe-after-layer"><img id="zoom-after-image" alt="拡大されたJPEG XL画像"></div>
+              <span class="wipe-label wipe-label-before">HEIC</span>
+              <span class="wipe-label wipe-label-after">JPEG XL</span>
+              <div id="zoom-divider" class="wipe-divider" role="slider" tabindex="0" aria-label="拡大画面の変換前後の表示境界" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span>↔</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </body>
+</html>

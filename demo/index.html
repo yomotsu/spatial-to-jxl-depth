@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+    <title>Depth Parallax · JPEG XL Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="mesh.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <main>
+        <section class="hero">
+          <p class="eyebrow">A JPEG XL DEPTH CHANNEL VIEWER</p>
+          <p class="intro">深度情報に応じた視差効果をブラウザで表示するデモです。</p>
+        </section>
+
+        <section id="demo-layout" class="demo-layout empty" aria-label="深度視差ビューア">
+          <div class="viewer-card">
+            <div id="stage" class="stage" aria-label="画像の表示エリア">
+              <canvas id="parallax-canvas" class="hidden" role="img" aria-label="深度マップによる視差プレビュー"></canvas>
+              <input id="file-input" class="file-input" type="file" accept="image/*,.jxl" multiple hidden>
+              <div id="placeholder" class="dropzone" role="button" tabindex="0" aria-label="画像を選択またはドロップ">
+                <span class="dropzone-icon" aria-hidden="true">＋</span>
+                <strong>画像をドロップ、またはここをクリック</strong>
+                <span class="dropzone-hint">深度付きJXLは1枚で、その他は色画像と深度マップを一緒に選択</span>
+              </div>
+              <div id="drop-error" class="drop-error hidden" role="alert" aria-busy="false">
+                <span id="drop-spinner" class="drop-spinner hidden" aria-hidden="true"></span>
+                <span id="drop-message"></span>
+              </div>
+            </div>
+
+            <div class="viewer-caption">
+              <span id="dimensions">色画像と深度マップを表示</span>
+              <span id="interaction-hint">カーソルを動かして視差を確認</span>
+            </div>
+          </div>
+
+          <aside class="control-card" aria-label="視差の設定">
+            <div class="control-heading">
+              <h2>設定</h2>
+            </div>
+            <p class="control-copy">深度マップで遠景と近景を分け、遠景が入力方向にずれるように描画します。</p>
+
+            <label class="range-label" for="render-mode">描画方式</label>
+            <select id="render-mode" class="render-mode" aria-describedby="render-mode-description" disabled>
+              <option value="mesh" selected>深度メッシュ（3D）</option>
+              <option value="warp">深度ワープ（2D）</option>
+            </select>
+            <p id="render-mode-description" class="mode-description">深度から立体的な面を作り、手前の面で背後を隠します。開いた隙間は面を引き伸ばしてつなぎます。</p>
+
+            <label class="range-label" for="strength">
+              <span>視差の強さ</span>
+              <output id="strength-value" for="strength">32 px</output>
+            </label>
+            <input id="strength" type="range" min="0" max="64" step="1" value="32">
+            <div class="range-ends"><span>控えめ</span><span>大きい</span></div>
+
+            <button id="depth-button" class="secondary-button" type="button" disabled>深度マップを見る</button>
+            <button id="motion-button" class="motion-button" type="button" disabled>端末の傾きを使う</button>
+            <p id="motion-status" class="motion-status"></p>
+
+            <div id="error" class="error-message hidden" role="alert"></div>
+          </aside>
+        </section>
+
+      </main>
+
+    </div>
+  </body>
+</html>

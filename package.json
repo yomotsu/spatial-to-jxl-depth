@@ -1,0 +1,14 @@
+{
+  "name": "spatial-to-jxl-depth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Electron app for converting iPhone Spatial HEIC photos to JPEG XL with a typed depth channel",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "electron": "45.0.0"
+  }
+}
